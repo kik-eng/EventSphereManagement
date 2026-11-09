@@ -52,3 +52,6 @@ app.listen(port, () => {
   console.log(`Uploads: http://localhost:${port}/uploads`);
   console.log("--------------------------------");
 });
+
+
+module.exports=app;
