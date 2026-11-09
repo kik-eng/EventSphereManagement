@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply min-h-screen bg-slate-100 text-slate-800 antialiased transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-950 dark:selection:bg-indigo-500/40 dark:selection:text-indigo-200;
+  }
+}
+
+/* Glassmorphism mesh gradient backgrounds */
+.glass-mesh {
+  background-image: 
+    radial-gradient(at 5% 10%, rgba(99, 102, 241, 0.12) 0px, transparent 45%),
+    radial-gradient(at 95% 5%, rgba(198, 161, 91, 0.12) 0px, transparent 40%),
+    radial-gradient(at 85% 90%, rgba(56, 189, 248, 0.10) 0px, transparent 50%),
+    radial-gradient(at 10% 90%, rgba(168, 85, 247, 0.10) 0px, transparent 45%);
+}
+
+.dark .glass-mesh {
+  background-image: 
+    radial-gradient(at 5% 10%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
+    radial-gradient(at 95% 5%, rgba(198, 161, 91, 0.10) 0px, transparent 45%),
+    radial-gradient(at 85% 90%, rgba(14, 165, 233, 0.14) 0px, transparent 50%),
+    radial-gradient(at 10% 90%, rgba(168, 85, 247, 0.14) 0px, transparent 50%);
+}
