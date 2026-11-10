@@ -1,7 +1,12 @@
 import axios from "axios";
 
+// Live Vercel Backend base URL with dynamic env fallback
+const BASE_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
+  : 'https://event-sphere-management-puce.vercel.app/api';
+
 const apiConfig = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
