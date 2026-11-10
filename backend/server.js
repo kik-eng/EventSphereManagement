@@ -37,7 +37,8 @@ app.use("/api", mainRoute);
 // ================= TEST ROUTE =================
 
 app.get("/", (req, res) => {
-  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+  const baseUrl = `${protocol}://${req.get("host")}`;
   res.json({
     message: "Backend is working successfully",
     uploads: `${baseUrl}/uploads/`
