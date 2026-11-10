@@ -25,7 +25,7 @@ const express = require('express');
 const router = express.Router();
 const { getAdminStats, getAllUsers, getAllEvents, createEvent } = require('../controllers/adminController');
 const { getAllApplications, reviewApplication,getBoothRequests, reviewBoothRequest } = 
-require('../controllers/adminApplicationController');
+require('../controllers/adminapplicationController');
 const { protect, adminOnly } = require('../middleware/adminMiddleware');
 
 router.get('/booth-requests', protect, adminOnly, getBoothRequests);
