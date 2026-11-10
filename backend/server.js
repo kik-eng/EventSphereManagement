@@ -1,14 +1,16 @@
 
+
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
+const fs = require("fs");
 
 const app = express();
 
 const mainRoute = require("./src/route/mainRoute");
 const dbConnection = require("./src/config/dbConnection");
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // ================= MIDDLEWARE =================
 
@@ -17,13 +19,12 @@ app.use(cors());
 
 // ================= UPLOADS =================
 
-// Images and documents will open from:
-// http://localhost:3000/uploads/filename.jpg
+// Serverless platform (Vercel) check: /tmp dir read-write permission hold karti hai
+const uploadDir = process.env.VERCEL 
+  ? "/tmp" 
+  : path.join(__dirname, "uploads");
 
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
-);
+app.use("/uploads", express.static(uploadDir));
 
 // ================= DATABASE =================
 
@@ -36,9 +37,10 @@ app.use("/api", mainRoute);
 // ================= TEST ROUTE =================
 
 app.get("/", (req, res) => {
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
   res.json({
     message: "Backend is working successfully",
-    uploads: "http://localhost:3000/uploads/"
+    uploads: `${baseUrl}/uploads/`
   });
 });
 
@@ -52,6 +54,7 @@ app.listen(port, () => {
   console.log(`Uploads: http://localhost:${port}/uploads`);
   console.log("--------------------------------");
 });
+
 
 
 module.exports = app;
