@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:3000/api';
+// Environment variable handling: local pe localhost, production pe Vercel URL
+const API_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : 'https://event-sphere-management-puce.vercel.app/api';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -22,22 +25,23 @@ export const askChatbotApi = async (message) => {
     const lowerMsg = message.toLowerCase();
 
     // 🎯 DETAILED BOOTH BOOKING RESPONSE
-   if (lowerMsg.includes('book') || lowerMsg.includes('booth') || lowerMsg.includes('reserve') || lowerMsg.includes('exhibitor')) {
-  const totalBooths = booths.length;
-  const availableBooths = booths.filter(b => b.status === 'available' || !b.isBooked).length;
-  const bookedBooths = booths.filter(b => b.status === 'booked' || b.isBooked).length;
+    if (lowerMsg.includes('book') || lowerMsg.includes('booth') || lowerMsg.includes('reserve') || lowerMsg.includes('exhibitor')) {
+      const totalBooths = booths.length;
+      const availableBooths = booths.filter(b => b.status === 'available' || !b.isBooked).length;
+      const bookedBooths = booths.filter(b => b.status === 'booked' || b.isBooked).length;
 
-  return `### 🏢 EventSphere Booth Booking Guide\n\n` +
-         `**Live Floor Status:**\n` +
-         `* **Total Booths:** ${totalBooths}\n` +
-         `* **Available (Green):** ${availableBooths}\n` +
-         `* **Reserved/Booked:** ${bookedBooths}\n\n` +
-         `**Step-by-Step Procedure:**\n` +
-         `1. **Access Floor Plan:** Open *Floor Plan Builder* from the sidebar.\n` +
-         `2. **Select Expo Hall:** Choose hall (e.g. ${halls[0]?.name || 'TECHWIZ'}).\n` +
-         `3. **Pick Available Slot:** Click on any green booth card on the grid.\n` +
-         `4. **Confirm Reservation:** Submit to reserve your booth space live!`;
-}
+      return `### 🏢 EventSphere Booth Booking Guide\n\n` +
+             `**Live Floor Status:**\n` +
+             `• **Total Booths:** ${totalBooths}\n` +
+             `• **Available (Green):** ${availableBooths}\n` +
+             `• **Reserved/Booked:** ${bookedBooths}\n\n` +
+             `**Step-by-Step Procedure:**\n` +
+             `1. **Access Floor Plan:** Open *Floor Plan Builder* from the sidebar.\n` +
+             `2. **Select Expo Hall:** Choose hall (e.g. ${halls[0]?.name || 'TECHWIZ'}).\n` +
+             `3. **Pick Available Slot:** Click on any green booth card on the grid.\n` +
+             `4. **Confirm Reservation:** Submit to reserve your booth space live!`;
+    }
+
     // 1. Events Queries
     if (lowerMsg.includes('event') || lowerMsg.includes('expo') || lowerMsg.includes('program') || lowerMsg.includes('aptech')) {
       if (events.length === 0) return "Currently, there are no published events in the database.";
@@ -62,7 +66,7 @@ export const askChatbotApi = async (message) => {
       return "Walaikum Assalam! 👋 I am your EventSphere AI Assistant. Ask me about available events, DB halls, or booth bookings!";
     }
 
-    return "I am EventSphere Smart AI! Ask me queries like:\n- 'How to book a booth?'\n- 'How many events are available?'\n- 'Show active halls'";
+    return "I am EventSphere Smart AI! Ask me queries like:\n- How to book a booth?\n- How many events are available?\n- Show active halls";
 
   } catch (err) {
     return "I'm having trouble connecting to EventSphere database right now.";

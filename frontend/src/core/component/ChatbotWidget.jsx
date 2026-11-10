@@ -24,9 +24,9 @@ const FormattedMessage = ({ content }) => {
           );
         }
 
-        const isBullet = trimmed.startsWith('* ') || trimmed.startsWith('• ');
+        const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ');
         if (isBullet) {
-          trimmed = trimmed.replace(/^(\*|•)\s*/, '');
+          trimmed = trimmed.replace(/^(\*|•|-)\s*/, '');
         }
 
         const parts = trimmed.split(/(\*\*.*?\*\*)/g);
@@ -91,7 +91,7 @@ export default function ChatbotWidget() {
   return (
     <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, fontFamily: "'Inter', sans-serif" }}>
       
-      {/* Floating Toggle Button with Framer Motion Scale */}
+      {/* Floating Toggle Button */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
@@ -115,7 +115,7 @@ export default function ChatbotWidget() {
         )}
       </AnimatePresence>
 
-      {/* Glassmorphism Window with Smooth Popup Animation */}
+      {/* Glassmorphism Chat Window */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
