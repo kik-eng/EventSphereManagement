@@ -55,15 +55,27 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// PUT /api/exhibitor/profile   (multipart/form-data, optional file field: logo)
+// PUT /api/exhibitor/profile (URL-based logoUrl)
 exports.updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    const { name, companyName, description, category, products, phone, website, contactEmail } = req.body;
+    const {
+      name,
+      companyName,
+      description,
+      category,
+      products,
+      phone,
+      website,
+      contactEmail,
+      logoUrl,
+    } = req.body;
 
-    if (name !== undefined && String(name).trim()) user.name = String(name).trim();
+    if (name !== undefined && String(name).trim()) {
+      user.name = String(name).trim();
+    }
 
     if (companyName !== undefined) {
       if (!String(companyName).trim()) {
@@ -77,7 +89,10 @@ exports.updateProfile = async (req, res) => {
     if (phone !== undefined) user.set('companyDetails.contact.phone', phone);
     if (website !== undefined) user.set('companyDetails.contact.website', website);
     if (contactEmail !== undefined) user.set('companyDetails.contact.email', contactEmail);
-    if (req.file) user.set('companyDetails.logoUrl', `/uploads/${req.file.filename}`);
+
+    if (logoUrl !== undefined) {
+      user.set('companyDetails.logoUrl', String(logoUrl).trim());
+    }
 
     await user.save();
 
@@ -90,7 +105,7 @@ exports.updateProfile = async (req, res) => {
 };
 
 // ───────────────────────── EVENTS & APPLICATIONS ─────────────────────────
-// GET /api/exhibitor/events  -> open events + meri application ka status
+// GET /api/exhibitor/events -> open events + meri application ka status
 exports.getOpenEvents = async (req, res) => {
   try {
     const events = await Event.find({ status: { $in: ['Upcoming', 'Live'] } })
@@ -112,10 +127,10 @@ exports.getOpenEvents = async (req, res) => {
   }
 };
 
-// POST /api/exhibitor/applications   (multipart: eventId, products, message, documents[])
+// POST /api/exhibitor/applications (URL-based documentUrl / documents[])
 exports.applyToEvent = async (req, res) => {
   try {
-    const { eventId, message, products } = req.body;
+    const { eventId, message, products, documentUrl, documentName, documents: bodyDocuments } = req.body;
     if (!isId(eventId)) return res.status(400).json({ message: 'Valid eventId is required.' });
 
     const user = await User.findById(req.user.id);
@@ -134,10 +149,20 @@ exports.applyToEvent = async (req, res) => {
       return res.status(409).json({ message: `You have already applied (status: ${existing.status}).` });
     }
 
-    const documents = (req.files || []).map((f) => ({
-      name: f.originalname,
-      url: `/uploads/${f.filename}`,
-    }));
+    let documents = [];
+    if (Array.isArray(bodyDocuments) && bodyDocuments.length > 0) {
+      documents = bodyDocuments
+        .filter((d) => d && d.url && String(d.url).trim())
+        .map((d) => ({
+          name: (d.name && String(d.name).trim()) || 'Document',
+          url: String(d.url).trim(),
+        }));
+    } else if (documentUrl && String(documentUrl).trim()) {
+      documents.push({
+        name: (documentName && String(documentName).trim()) || 'Company Brochure / Document',
+        url: String(documentUrl).trim(),
+      });
+    }
 
     const payload = {
       products: toList(products),
@@ -170,7 +195,7 @@ exports.myApplications = async (req, res) => {
   }
 };
 
-// DELETE /api/exhibitor/applications/:id   (sirf pending withdraw ho sakti hai)
+// DELETE /api/exhibitor/applications/:id (sirf pending withdraw ho sakti hai)
 exports.withdrawApplication = async (req, res) => {
   try {
     if (!isId(req.params.id)) return res.status(400).json({ message: 'Invalid application id.' });
@@ -187,7 +212,7 @@ exports.withdrawApplication = async (req, res) => {
 };
 
 // ───────────────────────── BOOTHS ─────────────────────────
-// GET /api/exhibitor/events/:eventId/booths  -> floor plan (event ke hall ke booths)
+// GET /api/exhibitor/events/:eventId/booths -> floor plan (event ke hall ke booths)
 exports.getEventBooths = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -223,7 +248,7 @@ exports.getEventBooths = async (req, res) => {
   }
 };
 
-// POST /api/exhibitor/booths/:boothId/reserve    Body: { eventId }
+// POST /api/exhibitor/booths/:boothId/reserve Body: { eventId }
 exports.reserveBooth = async (req, res) => {
   try {
     const { boothId } = req.params;
@@ -252,8 +277,7 @@ exports.reserveBooth = async (req, res) => {
     }
 
     // ATOMIC: sirf tab update hoga jab booth abhi bhi 'available' ho
-    // (do exhibitors ek hi waqt par click karein to sirf ek ko milega)
-      const reserved = await Booth.findOneAndUpdate(
+    const reserved = await Booth.findOneAndUpdate(
       { _id: boothId, status: 'available' },
       { status: 'reserved', assignedExhibitor: userId },
       { new: true }
@@ -272,7 +296,7 @@ exports.reserveBooth = async (req, res) => {
   }
 };
 
-// (sirf 'reserved' cancel ho sakta hai)
+// DELETE /api/exhibitor/booths/:boothId/reserve (sirf 'reserved' cancel ho sakta hai)
 exports.cancelReservation = async (req, res) => {
   try {
     const { boothId } = req.params;
@@ -308,12 +332,12 @@ exports.getMyBooths = async (req, res) => {
   }
 };
 
+// PUT /api/exhibitor/booths/:boothId/details
 exports.updateBoothDetails = async (req, res) => {
   try {
     const { boothId } = req.params;
     if (!isId(boothId)) return res.status(400).json({ message: 'Invalid booth id.' });
 
-    // Sirf apna booth edit ho sakta hai
     const booth = await Booth.findOne({ _id: boothId, assignedExhibitor: req.user.id });
     if (!booth) return res.status(404).json({ message: 'Booth not found or not yours.' });
 
@@ -343,7 +367,7 @@ exports.updateBoothDetails = async (req, res) => {
   }
 };
 
-// Grid mein aas-paas (8 direction) wale booths jinke exhibitors assigned hain
+// GET /api/exhibitor/booths/:boothId/neighbors
 exports.getNeighbors = async (req, res) => {
   try {
     const { boothId } = req.params;
