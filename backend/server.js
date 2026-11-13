@@ -1,5 +1,3 @@
-
-
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -26,9 +24,18 @@ const uploadDir = process.env.VERCEL
 
 app.use("/uploads", express.static(uploadDir));
 
-// ================= DATABASE =================
+// ================= DATABASE MIDDLEWARE =================
 
-dbConnection.dbConnection();
+// Har API request se pehle ensure karein ke MongoDB connected hai
+app.use(async (req, res, next) => {
+  try {
+    await dbConnection.dbConnection();
+    next();
+  } catch (error) {
+    console.error("Database connection middleware error:", error);
+    res.status(500).json({ message: "Database connection failed", error: error.message });
+  }
+});
 
 // ================= API ROUTES =================
 
@@ -47,15 +54,16 @@ app.get("/", (req, res) => {
 
 // ================= SERVER =================
 
-app.listen(port, () => {
-  console.log("--------------------------------");
-  console.log("EventSphere Backend Started");
-  console.log(`Server: http://localhost:${port}`);
-  console.log(`API: http://localhost:${port}/api`);
-  console.log(`Uploads: http://localhost:${port}/uploads`);
-  console.log("--------------------------------");
-});
-
-
+// Sirf local environment mein port listen karein (Vercel khud handle karta hai)
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log("--------------------------------");
+    console.log("EventSphere Backend Started");
+    console.log(`Server: http://localhost:${port}`);
+    console.log(`API: http://localhost:${port}/api`);
+    console.log(`Uploads: http://localhost:${port}/uploads`);
+    console.log("--------------------------------");
+  });
+}
 
 module.exports = app;
