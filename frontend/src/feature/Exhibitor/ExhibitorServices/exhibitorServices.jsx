@@ -1,8 +1,6 @@
 import apiConfig from '../../../config/ApiConfig';
 
-const multipart = { headers: { 'Content-Type': 'multipart/form-data' } };
-
-// Backend ki '/uploads/xyz.png' ko full URL bana deta hai
+// External URL ya legacy '/uploads/...' path ko safely handle karta hai
 export const fileUrl = (path) => {
   if (!path) return '';
   if (/^https?:\/\//i.test(path)) return path;
@@ -12,14 +10,14 @@ export const fileUrl = (path) => {
 /* ───────── Dashboard & Profile ───────── */
 export const getDashboardApi = async () => (await apiConfig.get('/exhibitor/dashboard')).data;
 export const getProfileApi = async () => (await apiConfig.get('/exhibitor/profile')).data;
-export const updateProfileApi = async (formData) =>
-  (await apiConfig.put('/exhibitor/profile', formData, multipart)).data;
+export const updateProfileApi = async (data) =>
+  (await apiConfig.put('/exhibitor/profile', data)).data;
 
 /* ───────── Events & Applications ───────── */
 export const getOpenEventsApi = async () => (await apiConfig.get('/exhibitor/events')).data;
 export const getMyApplicationsApi = async () => (await apiConfig.get('/exhibitor/applications')).data;
-export const applyToEventApi = async (formData) =>
-  (await apiConfig.post('/exhibitor/applications', formData, multipart)).data;
+export const applyToEventApi = async (data) =>
+  (await apiConfig.post('/exhibitor/applications', data)).data;
 export const withdrawApplicationApi = async (id) =>
   (await apiConfig.delete(`/exhibitor/applications/${id}`)).data;
 

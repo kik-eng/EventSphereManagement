@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ExhibitorLayout from '../ExhibitorComponents/ExhibitorLayout';
@@ -35,8 +34,12 @@ function EventsContent() {
   const [success, setSuccess] = useState('');
 
   const [target, setTarget] = useState(null);
-  const [form, setForm] = useState({ products: '', message: '' });
-  const [files, setFiles] = useState([]);
+  const [form, setForm] = useState({
+    products: '',
+    message: '',
+    documentName: '',
+    documentUrl: '',
+  });
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState('');
 
@@ -58,8 +61,7 @@ function EventsContent() {
 
   const openApply = (ev) => {
     setTarget(ev);
-    setForm({ products: '', message: '' });
-    setFiles([]);
+    setForm({ products: '', message: '', documentName: '', documentUrl: '' });
     setModalError('');
   };
 
@@ -69,19 +71,18 @@ function EventsContent() {
 
     if (!target) return;
 
-    const fd = new FormData();
-    fd.append('eventId', target._id);
-    fd.append('products', form.products);
-    fd.append('message', form.message);
-
-    files.forEach((file) => {
-      fd.append('documents', file);
-    });
+    const payload = {
+      eventId: target._id,
+      products: form.products,
+      message: form.message,
+      documentName: form.documentName.trim(),
+      documentUrl: form.documentUrl.trim(),
+    };
 
     try {
       setSubmitting(true);
 
-      const res = await applyToEventApi(fd);
+      const res = await applyToEventApi(payload);
 
       setSuccess(res.message || 'Application submitted successfully!');
       setTarget(null);
@@ -441,12 +442,12 @@ function EventsContent() {
                 lineHeight: 1.5
               }}
             >
-              Complete your application with your products and supporting documents.
+              Complete your application with your products and supporting document link.
             </span>
           </div>
 
           <Field
-            label="Products / Services you will showcase"
+            label="Products / Services you will showcase *"
             hint="Separate multiple products with commas"
           >
             <input
@@ -468,7 +469,7 @@ function EventsContent() {
               style={{
                 ...inputStyle(t),
                 resize: 'vertical',
-                minHeight: 95
+                minHeight: 90
               }}
               rows={3}
               value={form.message}
@@ -483,111 +484,34 @@ function EventsContent() {
           </Field>
 
           <Field
-            label="Supporting Documents"
-            hint="Business license, brochure etc. PDF / image, max 5 files, 5MB each"
+            label="Supporting Document Link (optional)"
+            hint="Paste a Google Drive, Dropbox, or PDF brochure URL"
           >
-            <div
-              style={{
-                border: `1.5px dashed ${t.border}`,
-                borderRadius: 12,
-                padding: 17,
-                background: t.dark ? 'rgba(255,255,255,0.04)' : '#F8FAFD'
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginBottom: 12
-                }}
-              >
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background: t.dark ? 'rgba(99,102,241,0.15)' : '#EAF0FA',
-                    display: 'grid',
-                    placeItems: 'center',
-                    color: t.dark ? '#818cf8' : '#244A8F'
-                  }}
-                >
-                  <Icon d={ICONS.upload} size={19} />
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: t.text
-                    }}
-                  >
-                    Upload your documents
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11.5,
-                      color: t.muted,
-                      marginTop: 3
-                    }}
-                  >
-                    PDF, PNG, JPG or WEBP
-                  </div>
-                </div>
-              </div>
-
+            <div style={{ display: 'grid', gap: 10 }}>
               <input
-                type="file"
-                multiple
-                accept="application/pdf,image/png,image/jpeg,image/webp"
+                type="text"
+                style={inputStyle(t)}
+                value={form.documentName}
                 onChange={(e) =>
-                  setFiles(Array.from(e.target.files).slice(0, 5))
+                  setForm((f) => ({
+                    ...f,
+                    documentName: e.target.value
+                  }))
                 }
-                style={{
-                  width: '100%',
-                  fontSize: 12,
-                  color: t.soft
-                }}
+                placeholder="Document Title (e.g. Company Brochure)"
               />
-
-              {files.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 12,
-                    display: 'grid',
-                    gap: 7
-                  }}
-                >
-                  {files.map((file, index) => (
-                    <div
-                      key={`${file.name}-${index}`}
-                      style={{
-                        background: t.dark ? 'rgba(255,255,255,0.06)' : '#FFFFFF',
-                        padding: '8px 10px',
-                        borderRadius: 8,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        fontSize: 11.5,
-                        color: t.text
-                      }}
-                    >
-                      <Icon d={ICONS.file} size={15} color="#244A8F" />
-                      <span
-                        style={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        {file.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <input
+                type="url"
+                style={inputStyle(t)}
+                value={form.documentUrl}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    documentUrl: e.target.value
+                  }))
+                }
+                placeholder="https://drive.google.com/..."
+              />
             </div>
           </Field>
 
@@ -621,11 +545,3 @@ function EventsContent() {
     </>
   );
 }
-
-const detailStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  fontSize: 12.5,
-  color: '#94a3b8'
-};

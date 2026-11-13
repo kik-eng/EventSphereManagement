@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import ExhibitorLayout from '../ExhibitorComponents/ExhibitorLayout';
 import {
@@ -38,6 +37,7 @@ const EMPTY = {
   phone: '',
   website: '',
   contactEmail: '',
+  logoUrl: '',
 };
 
 export default function ExhibitorProfile() {
@@ -55,10 +55,8 @@ function ProfileContent() {
   const t = useTheme();
 
   const [form, setForm] = useState(EMPTY);
-  const [logoUrl, setLogoUrl] = useState('');
-  const [logoFile, setLogoFile] = useState(null);
-  const [preview, setPreview] = useState('');
   const [email, setEmail] = useState('');
+  const [imgError, setImgError] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -78,7 +76,6 @@ function ProfileContent() {
         const c = p.companyDetails || {};
 
         setEmail(p.email || '');
-        setLogoUrl(c.logoUrl || '');
 
         setForm({
           name: p.name || '',
@@ -89,6 +86,7 @@ function ProfileContent() {
           phone: c.contact?.phone || '',
           website: c.contact?.website || '',
           contactEmail: c.contact?.email || '',
+          logoUrl: c.logoUrl || '',
         });
       } catch (err) {
         if (active) {
@@ -107,6 +105,7 @@ function ProfileContent() {
   }, []);
 
   const set = (key) => (e) => {
+    if (key === 'logoUrl') setImgError(false);
     setForm((f) => ({
       ...f,
       [key]: e.target.value,
@@ -123,25 +122,6 @@ function ProfileContent() {
     e.target.style.boxShadow = 'none';
   };
 
-  const pickLogo = (e) => {
-    const file = e.target.files?.[0];
-
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Logo must be smaller than 5MB.');
-      e.target.value = '';
-      return;
-    }
-
-    setError('');
-
-    if (preview) URL.revokeObjectURL(preview);
-
-    setLogoFile(file);
-    setPreview(URL.createObjectURL(file));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -152,28 +132,15 @@ function ProfileContent() {
       return setError('Company name is required.');
     }
 
-    const fd = new FormData();
-
-    Object.entries(form).forEach(([k, v]) => {
-      fd.append(k, v);
-    });
-
-    if (logoFile) {
-      fd.append('logo', logoFile);
-    }
-
     try {
       setSaving(true);
 
-      const res = await updateProfileApi(fd);
+      const res = await updateProfileApi(form);
 
-      setLogoUrl(res.profile.companyDetails?.logoUrl || '');
-      setLogoFile(null);
-
-      if (preview) {
-        URL.revokeObjectURL(preview);
-        setPreview('');
-      }
+      setForm((f) => ({
+        ...f,
+        logoUrl: res.profile.companyDetails?.logoUrl || f.logoUrl,
+      }));
 
       const u = JSON.parse(localStorage.getItem('user') || '{}');
       u.name = res.profile.name;
@@ -189,15 +156,9 @@ function ProfileContent() {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
-
   if (loading) return <PageLoader />;
 
-  const shownLogo = preview || fileUrl(logoUrl);
+  const shownLogo = !imgError ? fileUrl(form.logoUrl.trim()) : '';
 
   const two = {
     display: 'grid',
@@ -240,9 +201,7 @@ function ProfileContent() {
 
   return (
     <form onSubmit={handleSubmit} style={{ maxWidth: 1050 }}>
-
       {/* PAGE INTRO */}
-
       <div
         style={{
           marginBottom: 25,
@@ -321,7 +280,6 @@ function ProfileContent() {
       )}
 
       {/* COMPANY LOGO */}
-
       <Card style={{ padding: 26, marginBottom: 22 }}>
         <div style={sectionHeader}>
           <div style={sectionIcon}>
@@ -331,7 +289,7 @@ function ProfileContent() {
           <div>
             <h3 style={sectionTitle}>Company Logo</h3>
             <p style={sectionSubtitle}>
-              Upload your business logo to represent your company.
+              Paste a direct image URL to represent your company logo.
             </p>
           </div>
         </div>
@@ -369,6 +327,7 @@ function ProfileContent() {
               <img
                 src={shownLogo}
                 alt="Company logo"
+                onError={() => setImgError(true)}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -380,7 +339,7 @@ function ProfileContent() {
             )}
           </div>
 
-          <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
             <h4
               style={{
                 margin: '0 0 6px',
@@ -394,58 +353,28 @@ function ProfileContent() {
 
             <p
               style={{
-                margin: '0 0 14px',
+                margin: '0 0 12px',
                 fontSize: 12.5,
                 color: t.muted,
               }}
             >
-              PNG, JPG or WEBP format. Maximum file size 5MB.
+              Enter a public image link (PNG, JPG, WEBP, or SVG URL).
             </p>
 
-            <label
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '10px 17px',
-                borderRadius: 11,
-                cursor: 'pointer',
-                background: '#244A8F',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                fontSize: 12.5,
-                boxShadow: '0 3px 10px rgba(36,74,143,0.18)',
-              }}
-            >
-              <Icon d={ICONS.upload} size={15} />
-              Upload Logo
-
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={pickLogo}
-                style={{ display: 'none' }}
-              />
-            </label>
-
-            {logoFile && (
-              <p
-                style={{
-                  margin: '10px 0 0',
-                  fontSize: 12,
-                  color: '#218653',
-                  fontWeight: 600,
-                }}
-              >
-                Selected: {logoFile.name}
-              </p>
-            )}
+            <input
+              type="url"
+              style={inputStyle(t)}
+              value={form.logoUrl}
+              onChange={set('logoUrl')}
+              onFocus={focus}
+              onBlur={blur}
+              placeholder="https://example.com/company-logo.png"
+            />
           </div>
         </div>
       </Card>
 
       {/* COMPANY DETAILS */}
-
       <Card style={{ padding: 26, marginBottom: 22 }}>
         <div style={sectionHeader}>
           <div style={sectionIcon}>
@@ -543,7 +472,6 @@ function ProfileContent() {
       </Card>
 
       {/* CONTACT INFORMATION */}
-
       <Card style={{ padding: 26, marginBottom: 24 }}>
         <div style={sectionHeader}>
           <div style={sectionIcon}>
@@ -597,7 +525,6 @@ function ProfileContent() {
       </Card>
 
       {/* SAVE ACTION */}
-
       <div
         style={{
           display: 'flex',
@@ -609,15 +536,15 @@ function ProfileContent() {
         }}
       >
         <Button
-  type="submit"
-  loading={saving}
-  disabled={saving}
-  style={{
-    padding: '13px 28px',
-    borderRadius: 12,
-    minWidth: 165,
-  }}
->
+          type="submit"
+          loading={saving}
+          disabled={saving}
+          style={{
+            padding: '13px 28px',
+            borderRadius: 12,
+            minWidth: 165,
+          }}
+        >
           {!saving && (
             <Icon d={ICONS.check} size={16} strokeWidth={2.5} />
           )}

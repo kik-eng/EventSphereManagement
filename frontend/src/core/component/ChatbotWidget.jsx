@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Bot, Send, X, Sparkles } from 'lucide-react';
 import { askChatbotApi } from '../services/chatbotServices';
 
+const INITIAL_MESSAGE = [
+  { sender: 'bot', text: 'Hi! I am EventSphere Smart AI. Ask me anything about events, halls, or booth bookings!' }
+];
+
 // Custom Markdown Formatter Component
 const FormattedMessage = ({ content }) => {
   if (!content) return null;
@@ -63,12 +67,41 @@ const FormattedMessage = ({ content }) => {
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { sender: 'bot', text: 'Hi! I am EventSphere Smart AI. Ask me anything about events, halls, or booth bookings!' }
-  ]);
+  const [messages, setMessages] = useState(INITIAL_MESSAGE);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const chatEndRef = useRef(null);
+
+  // Check login status & current route continuously (works outside Router too)
+  useEffect(() => {
+    const checkAuthAndRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
+      const isAuthPage = authRoutes.includes(path);
+      const token = localStorage.getItem('token') || localStorage.getItem('user') || sessionStorage.getItem('token');
+
+      const validUser = Boolean(token) && !isAuthPage;
+      setIsAuthenticated(validUser);
+
+      // Logout hote hi chat window close aur reset kar dein
+      if (!validUser) {
+        setIsOpen(false);
+        setMessages(INITIAL_MESSAGE);
+        setInput('');
+        setTyping(false);
+      }
+    };
+
+    checkAuthAndRoute();
+    const interval = setInterval(checkAuthAndRoute, 500);
+    window.addEventListener('storage', checkAuthAndRoute);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', checkAuthAndRoute);
+    };
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -87,6 +120,11 @@ export default function ChatbotWidget() {
     setTyping(false);
     setMessages(prev => [...prev, { sender: 'bot', text: botReply }]);
   };
+
+  // Agar user logged out hai ya login/register page par hai to kuch render na karein
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, fontFamily: "'Inter', sans-serif" }}>

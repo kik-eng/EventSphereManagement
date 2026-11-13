@@ -1,10 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getAllHallsApi } from '../AdminServices/floorPlanServices';
 
-const API_BASE = 'http://localhost:3000/api';
+// Dynamic API Base URL (Vercel env variable ya local fallback)
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const cleanBaseUrl = rawApiUrl.replace(/\/+$/, '');
+const API_BASE = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
 
 const defaultBanner =
   'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1000&auto=format&fit=crop';
